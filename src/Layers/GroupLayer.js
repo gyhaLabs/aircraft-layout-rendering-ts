@@ -1,12 +1,12 @@
 import React from 'react';
-import { Image, Layer, Text } from 'react-konva';
+import { Group, Image, Text } from 'react-konva';
 import useImages from '../hooks/useImages';
 
-const SeatLayer = ({ layer, hoveredIds, setHoveredIds, stage }) => {
+const GroupLayer = ({ layer, hoveredIds, setHoveredIds, stage }) => {
     const { box, boxHovered, boxError, boxErrorHovered } = useImages();
 
     return (
-        <Layer key={`seat-layer-${layer.id}`}>
+        <Group key={`group-${layer.id}`}>
             {layer?.items?.map((item) => {
                 let image = hoveredIds.find((id) => id === item.id) ? boxHovered : box;
 
@@ -40,16 +40,16 @@ const SeatLayer = ({ layer, hoveredIds, setHoveredIds, stage }) => {
 
                         <Text
                             text={item.text}
-                            scaleX={stage.scale < 4 ? 0.8 : 0.2}
-                            scaleY={stage.scale < 4 ? 0.8 : 0.2}
+                            scaleX={stage.scale < 4 ? 0.5 : 0.2}
+                            scaleY={stage.scale < 4 ? 0.5 : 0.2}
                             x={item.posX + 5}
                             y={item.posY + 5}
                         />
                     </React.Fragment>
                 );
             })}
-        </Layer>
+        </Group>
     );
 };
 
-export default SeatLayer;
+export default GroupLayer;

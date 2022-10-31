@@ -5,4 +5,6 @@ export type Region = {
     deck: string;
     id: number;
     locations: Location[];
+    columns?: number;
+    heightRatio?: number;
 };

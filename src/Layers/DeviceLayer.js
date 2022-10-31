@@ -6,9 +6,9 @@ const DeviceLayer = ({ layoutData, stage }) => {
     const viewport = viewportRectangle(stage);
     return (
         <Layer key="device-layer">
-            {layoutData?.layers?.map((layer) => {
-                return layer.items.map((item) => {
-                    return item.items.map((deviceItem, i) => {
+            {layoutData?.groups?.map((group) => {
+                return group.items.map((deviceItem) => {
+                    return deviceItem.items.map((deviceItem, i) => {
                         const { posX, posY, width, height, scale, color, text } = deviceItem;
                         const device = { x: posX, y: posY, width, height };
 
