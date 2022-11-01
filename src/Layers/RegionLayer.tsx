@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layer, Rect, Text } from 'react-konva';
-import { Region } from '../types/region';
+import { Region } from '../types/extendedTypes';
 
 export type ExtendedRegion = Region & {
     xStart: number;

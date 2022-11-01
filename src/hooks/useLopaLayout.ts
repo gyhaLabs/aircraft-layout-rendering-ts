@@ -1,21 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Location, LocationAlignment } from '../types/location';
-import { Region } from '../types/region';
-import { VisualGroup, VisualGroupItem, VisualGroupSubItem } from '../types/visualGroup';
+import { DeviceGroup, LocationAlignment, ExtendedDevice, ExtendedRegion, DEVICE_TYPE } from '../types/extendedTypes';
 import { parseLopaJSON } from '../utils/lopa';
 import { getLopaJSON } from '../utils/lopa.testfile';
 
 const itemSpacingX = 4;
 const itemSpacingY = 4;
-const groupSpacing = 6;
+const groupSpacing = 8;
 const deckPosYStart = 0;
 const deckPosYEnd = 1410;
 const fullHeight = deckPosYEnd - deckPosYStart;
 const deckPosXStart = 236;
 const deckPosXEnd = 482;
 
-const getGroupPosXStart = (region: Region, location: Location) => {
-    switch (location.alignment_in_fuselage) {
+const getGroupPosXStart = (region: ExtendedRegion, deviceGroup: DeviceGroup) => {
+    switch (deviceGroup.alignment_in_fuselage) {
         case LocationAlignment.LEFT:
             return deckPosXStart;
         case LocationAlignment.MIDDLE:
@@ -29,8 +27,8 @@ const getGroupPosXStart = (region: Region, location: Location) => {
     }
 };
 
-const getGroupPosXEnd = (region: Region, location: Location) => {
-    switch (location.alignment_in_fuselage) {
+const getGroupPosXEnd = (region: ExtendedRegion, deviceGroup: DeviceGroup) => {
+    switch (deviceGroup.alignment_in_fuselage) {
         case LocationAlignment.LEFT:
             return region.columns === 3 ? deckPosXStart + (deckPosXEnd - deckPosXStart) / 3 : (deckPosXStart + deckPosXEnd) / 2;
         case LocationAlignment.MIDDLE:
@@ -41,21 +39,6 @@ const getGroupPosXEnd = (region: Region, location: Location) => {
             return deckPosXEnd;
         default:
             return deckPosXEnd;
-    }
-};
-
-const getNumberingStart = (region: Region, location: Location) => {
-    switch (location.alignment_in_fuselage) {
-        case LocationAlignment.LEFT:
-            return 0;
-        case LocationAlignment.MIDDLE:
-            return Number(location.grid_col_max) || 1;
-        case LocationAlignment.RIGHT:
-            return region.columns === 3 ? (Number(location.grid_col_max) || 1) * 2 : Number(location.grid_col_max) || 1;
-        case LocationAlignment.FULL_WIDTH:
-            return 0;
-        default:
-            return 0;
     }
 };
 
@@ -95,34 +78,29 @@ const useLopaLayout = () => {
                     locationY[LocationAlignment.RIGHT] = regionStartingPoint;
                     locationY[LocationAlignment.FULL_WIDTH] = regionStartingPoint;
 
-                    const regions = region.locations.map((location) => {
-                        const { section, alignment_in_fuselage: alignment, grid_col_max, grid_row_max } = location;
+                    const regions = region.locations.map((deviceGroup: DeviceGroup) => {
+                        const { section, alignment_in_fuselage: alignment, grid_row_max } = deviceGroup;
                         const locationHeight = ((Number(grid_row_max) || 1) * fullHeight) / fullUnitHeight;
 
-                        const group: VisualGroup = {
-                            id: location.id.toString(),
+                        locationY[LocationAlignment.FULL_WIDTH] = Math.max(
+                            locationY[LocationAlignment.LEFT],
+                            locationY[LocationAlignment.MIDDLE],
+                            locationY[LocationAlignment.RIGHT]
+                        );
 
-                            groupPosXStart: getGroupPosXStart(region, location) + groupSpacing,
-                            groupPosXEnd: getGroupPosXEnd(region, location) - groupSpacing,
+                        const group: DeviceGroup = {
+                            ...deviceGroup,
+                            groupPosXStart: getGroupPosXStart(region, deviceGroup) + groupSpacing,
+                            groupPosXEnd: getGroupPosXEnd(region, deviceGroup) - groupSpacing,
                             groupPosYStart: locationY[alignment as LocationAlignment] + groupSpacing,
                             groupPosYEnd: locationY[alignment as LocationAlignment] + locationHeight - groupSpacing,
-
-                            columnCount: Number(grid_col_max) || 1,
-                            rowCount: Number(grid_row_max) || 1,
-
-                            numberingStart: getNumberingStart(region, location),
-
                             itemSpacingX,
                             itemSpacingY,
-
                             name: section,
-                            description: section,
-                            visible: true,
-                            items: [],
+                            devices: deviceGroup.devices || [],
                         };
 
                         locationY[alignment as LocationAlignment] += locationHeight;
-
                         return group;
                     });
 
@@ -133,8 +111,69 @@ const useLopaLayout = () => {
                 .flat(),
         };
 
-        data.groups.forEach((group: VisualGroup) => {
-            const { groupPosXEnd, groupPosYEnd, groupPosXStart, groupPosYStart, columnCount, rowCount, numberingStart, name } = group;
+        data.groups.forEach((group: DeviceGroup, i) => {
+            const { groupPosXEnd, groupPosYEnd, groupPosXStart, groupPosYStart, name } = group;
+            let groupWidth = groupPosXEnd && groupPosXStart ? groupPosXEnd - groupPosXStart : 0;
+            let groupHeight = groupPosYEnd && groupPosYStart ? groupPosYEnd - groupPosYStart : 0;
+
+            // If there are no devices in a group (Ex: lavatory, galley, door, emergency_exit)
+            if (!group.devices?.length) {
+                const item: ExtendedDevice = {
+                    device: name || '',
+                    grid_col: '1',
+                    grid_row: '1',
+                    logical_name: name || '',
+                    type: name || '',
+
+                    id: `${group.name}-${i}`,
+                    width: groupWidth - itemSpacingX,
+                    height: groupHeight - itemSpacingY,
+                    posX: groupPosXStart,
+                    posY: groupPosYStart,
+                    hasError: false,
+                    connections: [],
+                };
+                group.devices = [item];
+            } else {
+                let devices: ExtendedDevice[] = [];
+                group.devices.map((device) => {
+                    const cols = Number(group.grid_col_max);
+                    const rows = Number(group.grid_row_max);
+
+                    const col = Number(device.grid_col);
+                    const row = Number(device.grid_row);
+
+                    let itemWidth = groupWidth / cols - itemSpacingX;
+                    let itemHeight = groupHeight / rows - itemSpacingY;
+
+                    let xStart = groupPosXStart || 0;
+                    let yStart = groupPosYStart || 0;
+
+                    const deviceName = [DEVICE_TYPE.ISD, DEVICE_TYPE.SPM].includes(device.type) ? device.logical_name : device.type;
+
+                    const item: ExtendedDevice = {
+                        device: deviceName,
+                        grid_col: device.grid_col,
+                        grid_row: device.grid_row,
+                        logical_name: deviceName,
+                        type: device.type,
+
+                        id: `${group.name}-${i}`,
+                        width: (groupWidth - itemSpacingX) / cols,
+                        height: (groupHeight - itemSpacingY) / rows,
+                        posX: xStart + itemSpacingX * (col - 1) + itemWidth * (col - 1),
+                        posY: yStart + itemSpacingY * (row - 1) + itemHeight * (row - 1),
+                        hasError: Math.floor(Math.random() * 10) < 2,
+                        connections: [],
+                    };
+
+                    devices.push(item);
+                });
+
+                group.devices = devices;
+            }
+
+            /*  const { groupPosXEnd, groupPosYEnd, groupPosXStart, groupPosYStart, columnCount, rowCount, numberingStart, name } = group;
             let groupWidth = groupPosXEnd - groupPosXStart;
             let groupHeight = groupPosYEnd - groupPosYStart;
             let itemWidth = groupWidth / columnCount - itemSpacingX;
@@ -144,8 +183,8 @@ const useLopaLayout = () => {
                 for (let col = 1; col <= columnCount; col++) {
                     const deviceName = rowCount <= 1 ? name : `${name.substring(0, 3)}${row}${col + numberingStart}`;
 
-                    const item: VisualGroupItem = {
-                        id: `${deviceName}${col + numberingStart}${row}`,
+                    const item: ExtendedDevice = {
+                        id: `${deviceName}${col + numberingStart}${row}${Math.random()}`,
                         type: 'seat',
                         width: (groupWidth - itemSpacingX) / columnCount,
                         height: (groupHeight - itemSpacingY) / rowCount,
@@ -153,7 +192,7 @@ const useLopaLayout = () => {
                         posY: groupPosYStart + itemSpacingY * (row - 1) + itemHeight * (row - 1),
                         text: deviceName,
                         hasError: Math.floor(Math.random() * 10) < 2,
-                        items: [],
+                        connections: [],
                     };
 
                     // generating sub items level 1
@@ -161,7 +200,7 @@ const useLopaLayout = () => {
                     for (let i = 0; i < deviceCount; i++) {
                         const spaceBetweenDevices = 2;
 
-                        const deviceItem: VisualGroupSubItem = {
+                        const deviceItem: Connection = {
                             id: `device-${col + numberingStart}${row}-${i}`,
                             type: 'device',
                             seat: `${col + numberingStart}${row}`,
@@ -175,12 +214,12 @@ const useLopaLayout = () => {
                             //items: [],
                             color: item.hasError ? 'red' : `#${Math.floor(Math.random() * 16777215).toString(16)}`,
                         };
-                        item.items.push(deviceItem);
+                        item.connections.push(deviceItem);
                     }
 
-                    group.items.push(item);
+                    group.devices.push(item);
                 }
-            }
+            } */
         });
 
         return data;

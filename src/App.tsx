@@ -1,10 +1,9 @@
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { useState } from 'react';
 import useImages from './hooks/useImages';
-import useAircraftLayout from './hooks/useAircraftLayout';
 import SoftwareLayer from './Layers/SoftwareLayer';
 import DeviceLayer from './Layers/DeviceLayer';
-import SeatLayer from './Layers/GroupLayer';
+import GroupLayer from './Layers/GroupLayer';
 import { Stage, Layer, Image } from 'react-konva';
 import useLopaLayout from './hooks/useLopaLayout';
 import RegionLayer from './Layers/RegionLayer';
@@ -63,8 +62,6 @@ function App() {
         setStage(stageToSet);
     }, []);
 
-    const [hoveredIds, setHoveredIds] = useState([]);
-
     return (
         <div className="App">
             <div
@@ -96,7 +93,7 @@ function App() {
 
                 <Layer>
                     {layoutData.groups.map((layer, i) => (
-                        <SeatLayer layer={layer} hoveredIds={hoveredIds} setHoveredIds={setHoveredIds} stage={stage} key={`layer-${i}`} />
+                        <GroupLayer layer={layer} stage={stage} key={`layer-${i}`} />
                     ))}
                 </Layer>
 

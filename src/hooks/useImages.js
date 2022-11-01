@@ -4,6 +4,8 @@ import { ReactComponent as Box } from '../images//box.svg';
 import { ReactComponent as BoxHovered } from '../images//box-hovered.svg';
 import { ReactComponent as BoxError } from '../images//box-error.svg';
 import { ReactComponent as BoxErrorHovered } from '../images//box-error-hovered.svg';
+import { ReactComponent as Lavatory } from '../images/lavatory.svg';
+
 import useImage from 'use-image';
 
 const useImages = () => {
@@ -14,7 +16,8 @@ const useImages = () => {
     const [boxErrorHovered] = useImage(
         `data:image/svg+xml,${encodeURIComponent(ReactDOMServer.renderToStaticMarkup(<BoxErrorHovered />))}`
     );
-    return { box, boxHovered, boxError, boxErrorHovered, background };
+    const [lavatory] = useImage(`data:image/svg+xml,${encodeURIComponent(ReactDOMServer.renderToStaticMarkup(<Lavatory />))}`);
+    return { box, boxHovered, boxError, boxErrorHovered, background, lavatory };
 };
 
 export default useImages;

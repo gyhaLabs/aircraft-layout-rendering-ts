@@ -1,5 +1,4 @@
-import { LocationAlignment } from '../types/location';
-import { Region } from '../types/region';
+import { DeviceGroup, ExtendedRegion, LocationAlignment, Region } from '../types/extendedTypes';
 
 export type LopaRegion = {
     region: Region;
@@ -11,17 +10,16 @@ type RegionUnitHeight = {
 };
 
 export const parseLopaJSON = (lopaFile: LopaRegion[]) => {
-    let regions: Region[] = [];
+    let regions: ExtendedRegion[] = [];
     lopaFile.map((section) => {
         regions.push(section.region);
     });
 
     const { unitHeights, fullUnitHeight } = getRegionUnitHeights(regions);
 
-    regions.map((region) => {
+    regions.map((region: ExtendedRegion) => {
         region.columns = getColumnCount(region);
         region.heightRatio = (unitHeights.find((r) => r.id === region.id)?.unitHeight || 1) / fullUnitHeight;
-        return;
     });
 
     return { regions, fullUnitHeight };
@@ -32,16 +30,16 @@ export const parseLopaJSON = (lopaFile: LopaRegion[]) => {
  * @param regions
  * @returns
  */
-const getRegionUnitHeights = (regions: Region[]) => {
+const getRegionUnitHeights = (regions: ExtendedRegion[]) => {
     let regionUnitHeights: RegionUnitHeight[] = [];
     let fullUnitHeight = 0;
-    regions.map((region) => {
+    regions.map((region: ExtendedRegion) => {
         let rowSizeLeft = 0;
         let rowSizeRight = 0;
         let rowSizeMiddle = 0;
         let rowSizeFull = 0;
 
-        region.locations.map((location) => {
+        region.locations.map((location: DeviceGroup) => {
             const rows = Number(location.grid_row_max) || 1;
             switch (location.alignment_in_fuselage as LocationAlignment) {
                 case LocationAlignment.LEFT:
@@ -61,8 +59,6 @@ const getRegionUnitHeights = (regions: Region[]) => {
         const localMax = Math.max(rowSizeLeft, rowSizeRight, rowSizeMiddle, rowSizeFull);
         regionUnitHeights.push({ id: region.id, unitHeight: localMax });
         fullUnitHeight += localMax;
-
-        return;
     });
     return { unitHeights: regionUnitHeights, fullUnitHeight };
 };
@@ -72,13 +68,12 @@ const getRegionUnitHeights = (regions: Region[]) => {
  * @param region
  * @returns
  */
-const getColumnCount = (region: Region) => {
+const getColumnCount = (region: ExtendedRegion) => {
     let columns = 2;
-    region.locations.map((location) => {
+    region.locations.map((location: DeviceGroup) => {
         if (location.alignment_in_fuselage === LocationAlignment.MIDDLE) {
             columns = 3;
         }
-        return;
     });
     return columns;
 };
