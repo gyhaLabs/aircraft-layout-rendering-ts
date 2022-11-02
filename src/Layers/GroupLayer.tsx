@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Group, Image, Text } from 'react-konva';
 import useImages from '../hooks/useImages';
 import { DeviceGroup, DEVICE_TYPE, ExtendedDevice, SPECIAL_SECTIONS } from '../types/extendedTypes';
-import Divider from './components/Devider';
+import Divider from './components/Divider';
 import Door from './components/Door';
 import SPM from './components/SPM';
 
@@ -21,7 +21,7 @@ const GroupLayer = ({ layer, stage }: GroupLayerProps) => {
     const { box, boxHovered, boxError, boxErrorHovered, lavatory } = useImages();
     const [hovered, setHovered] = useState<string>('');
 
-    const isDivider = layer.name === SPECIAL_SECTIONS.DEVIDER;
+    const isDivider = layer.name === SPECIAL_SECTIONS.DIVIDER;
     const isLavatory = layer.name === SPECIAL_SECTIONS.LAVATORY;
     const isExit = layer.name && [SPECIAL_SECTIONS.DOOR, SPECIAL_SECTIONS.EMERGENCY_EXIT].includes(layer.name);
 

@@ -1,6 +1,6 @@
 export const SPECIAL_SECTIONS = {
     DOOR: 'door',
-    DEVIDER: 'devider',
+    DIVIDER: 'devider',
     EMERGENCY_EXIT: 'emergency_exit',
     LAVATORY: 'lavatory',
 };
@@ -80,14 +80,12 @@ export type Connection = {
 };
 
 export type ExtendedConnection = Connection & {
-    type?: string;
-    seat?: string;
-    width?: number;
-    height?: number;
-    scale?: number;
-    posX?: number;
-    posY?: number;
-    text?: string;
+    width: number;
+    height: number;
+    scale: number;
+    posX: number;
+    posY: number;
+    parentDevice: string;
     hasError?: boolean;
     color?: string;
 };

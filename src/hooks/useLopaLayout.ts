@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { DeviceGroup, LocationAlignment, ExtendedDevice, ExtendedRegion, DEVICE_TYPE } from '../types/extendedTypes';
+import { DeviceGroup, LocationAlignment, ExtendedDevice, ExtendedRegion, DEVICE_TYPE, ExtendedConnection } from '../types/extendedTypes';
 import { parseLopaJSON } from '../utils/lopa';
 import { getLopaJSON } from '../utils/lopa.testfile';
 
@@ -151,7 +151,15 @@ const useLopaLayout = () => {
 
                     const deviceName = [DEVICE_TYPE.ISD, DEVICE_TYPE.SPM].includes(device.type) ? device.logical_name : device.type;
 
-                    const item: ExtendedDevice = {
+                    const isSPM = device.type === DEVICE_TYPE.SPM;
+
+                    const deviceWidth = isSPM ? 8 : (groupWidth - itemSpacingX) / cols;
+                    const deviceHeight = isSPM ? 8 : (groupHeight - itemSpacingY) / rows;
+
+                    const devicePosX = xStart + itemSpacingX * (col - 1) + itemWidth * (col - 1);
+                    const devicePosY = yStart + itemSpacingY * (row - 1) + itemHeight * (row - 1);
+
+                    let item: ExtendedDevice = {
                         device: deviceName,
                         grid_col: device.grid_col,
                         grid_row: device.grid_row,
@@ -159,67 +167,38 @@ const useLopaLayout = () => {
                         type: device.type,
 
                         id: `${group.name}-${i}`,
-                        width: (groupWidth - itemSpacingX) / cols,
-                        height: (groupHeight - itemSpacingY) / rows,
-                        posX: xStart + itemSpacingX * (col - 1) + itemWidth * (col - 1),
-                        posY: yStart + itemSpacingY * (row - 1) + itemHeight * (row - 1),
+                        width: deviceWidth,
+                        height: deviceHeight,
+                        posX: isSPM ? devicePosX - 10 : devicePosX,
+                        posY: devicePosY,
                         hasError: Math.floor(Math.random() * 10) < 2,
                         connections: [],
                     };
+
+                    // generating Connection-level items;
+                    const connections = device.connections;
+                    if (connections) {
+                        connections.map((connection, i) => {
+                            const deviceItem: ExtendedConnection = {
+                                ...connection,
+                                width: 8,
+                                height: 8,
+                                scale: 0.08,
+                                posX: item.posX,
+                                posY: item.posY + (item.width / connections.length) * i,
+                                hasError: Math.floor(Math.random() * 10) < 2,
+                                color: 'black',
+                                parentDevice: item.device || '',
+                            };
+                            item.connections ? item.connections.push(deviceItem) : (item.connections = [deviceItem]);
+                        });
+                    }
 
                     devices.push(item);
                 });
 
                 group.devices = devices;
             }
-
-            /*  const { groupPosXEnd, groupPosYEnd, groupPosXStart, groupPosYStart, columnCount, rowCount, numberingStart, name } = group;
-            let groupWidth = groupPosXEnd - groupPosXStart;
-            let groupHeight = groupPosYEnd - groupPosYStart;
-            let itemWidth = groupWidth / columnCount - itemSpacingX;
-            let itemHeight = groupHeight / rowCount - itemSpacingY;
-
-            for (let row = 1; row <= rowCount; row++) {
-                for (let col = 1; col <= columnCount; col++) {
-                    const deviceName = rowCount <= 1 ? name : `${name.substring(0, 3)}${row}${col + numberingStart}`;
-
-                    const item: ExtendedDevice = {
-                        id: `${deviceName}${col + numberingStart}${row}${Math.random()}`,
-                        type: 'seat',
-                        width: (groupWidth - itemSpacingX) / columnCount,
-                        height: (groupHeight - itemSpacingY) / rowCount,
-                        posX: groupPosXStart + itemSpacingX * (col - 1) + itemWidth * (col - 1),
-                        posY: groupPosYStart + itemSpacingY * (row - 1) + itemHeight * (row - 1),
-                        text: deviceName,
-                        hasError: Math.floor(Math.random() * 10) < 2,
-                        connections: [],
-                    };
-
-                    // generating sub items level 1
-                    const deviceCount = Math.floor(Math.random() * 3) + 1;
-                    for (let i = 0; i < deviceCount; i++) {
-                        const spaceBetweenDevices = 2;
-
-                        const deviceItem: Connection = {
-                            id: `device-${col + numberingStart}${row}-${i}`,
-                            type: 'device',
-                            seat: `${col + numberingStart}${row}`,
-                            width: 10,
-                            height: 10,
-                            scale: 0.1,
-                            posX: 2 + item.posX + spaceBetweenDevices * i + 10 * i,
-                            posY: item.posY + Math.floor(Math.random() * (item.height - 2)) + 2,
-                            text: `Device ${i + 1}`,
-                            hasError: Math.floor(Math.random() * 10) < 2,
-                            //items: [],
-                            color: item.hasError ? 'red' : `#${Math.floor(Math.random() * 16777215).toString(16)}`,
-                        };
-                        item.connections.push(deviceItem);
-                    }
-
-                    group.devices.push(item);
-                }
-            } */
         });
 
         return data;

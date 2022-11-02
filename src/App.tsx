@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
 import { useState } from 'react';
 import useImages from './hooks/useImages';
-import SoftwareLayer from './Layers/SoftwareLayer';
-import DeviceLayer from './Layers/DeviceLayer';
+import ConnectionLayer from './Layers/ConnectionLayer';
 import GroupLayer from './Layers/GroupLayer';
 import { Stage, Layer, Image } from 'react-konva';
 import useLopaLayout from './hooks/useLopaLayout';
@@ -97,9 +96,7 @@ function App() {
                     ))}
                 </Layer>
 
-                {stage.scale > 4 && <DeviceLayer layoutData={layoutData} stage={stage} />}
-
-                {stage.scale > 80 && <SoftwareLayer layoutData={layoutData} stage={stage} />}
+                {stage.scale > 4 && <ConnectionLayer deviceGroups={layoutData.groups} stage={stage} />}
             </Stage>
         </div>
     );
